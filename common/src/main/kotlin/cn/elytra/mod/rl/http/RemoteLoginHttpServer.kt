@@ -17,10 +17,14 @@ import kotlinx.coroutines.runBlocking
 
 class RemoteLoginHttpServer {
 
-	private fun createServer() =
-		embeddedServer(CIO, 14439) {
+	private fun createServer(): EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration> {
+		val config = RemoteLoginAPI.getConfig()
+		return embeddedServer(CIO, port = config.httpServerPort, host = config.httpServerHost) {
 			install(ContentNegotiation) {
 				gson {
+					if(config.usePrettyPrintJsonResponse()) {
+						setPrettyPrinting()
+					}
 				}
 			}
 
@@ -72,6 +76,7 @@ class RemoteLoginHttpServer {
 				}
 			}
 		}
+	}
 
 	val server by lazy { createServer() }
 

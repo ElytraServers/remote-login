@@ -1,5 +1,6 @@
 package cn.elytra.mod.rl;
 
+import cn.elytra.mod.rl.common.RemoteLoginConfig;
 import cn.elytra.mod.rl.common.RemoteLoginManager;
 import cn.elytra.mod.rl.http.RemoteLoginHttpServer;
 import lombok.experimental.UtilityClass;
@@ -20,6 +21,10 @@ public class RemoteLoginAPI {
 
     @Nullable
     private static RemoteLoginManager manager = null;
+
+    @NotNull
+    private static RemoteLoginConfig config = new RemoteLoginConfig() {
+    };
 
     public static void initAndStartServer() {
         // check manager before starting the server
@@ -53,5 +58,14 @@ public class RemoteLoginAPI {
         } else {
             throw new IllegalStateException("RemoteLoginManager is already set");
         }
+    }
+
+    @NotNull
+    public static RemoteLoginConfig getConfig() {
+        return config;
+    }
+
+    public static void setConfig(@NotNull RemoteLoginConfig config) {
+        RemoteLoginAPI.config = config;
     }
 }
