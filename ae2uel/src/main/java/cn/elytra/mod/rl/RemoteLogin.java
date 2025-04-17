@@ -1,0 +1,55 @@
+package cn.elytra.mod.rl;
+
+import cn.elytra.mod.rl.block.RemoteLoginBlock;
+import cn.elytra.mod.rl.tile.RemoteLoginTile;
+import net.minecraft.block.Block;
+import net.minecraft.item.Item;
+import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.event.RegistryEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.event.FMLServerStartedEvent;
+import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.registry.GameRegistry;
+import org.jetbrains.annotations.NotNull;
+
+@Mod(modid = "remote_login")
+@Mod.EventBusSubscriber
+public class RemoteLogin {
+
+    @Mod.Instance
+    public static RemoteLogin instance;
+
+    public RemoteLogin() {
+        RemoteLoginAPI.setManager(RemoteLoginTileManager.INSTANCE);
+    }
+
+    public static ResourceLocation location(String path) {
+        return new ResourceLocation("remote_login", path);
+    }
+
+    @NotNull
+    public static final RemoteLoginBlock REMOTE_LOGIN_BLOCK = new RemoteLoginBlock();
+
+    @SubscribeEvent
+    public static void onBlockRegistration(RegistryEvent.Register<Block> event) {
+        event.getRegistry().register(REMOTE_LOGIN_BLOCK);
+        GameRegistry.registerTileEntity(RemoteLoginTile.class, location("remote_login"));
+    }
+
+    @SubscribeEvent
+    public static void onItemRegistration(RegistryEvent.Register<Item> event) {
+        event.getRegistry().register(REMOTE_LOGIN_BLOCK.getItemBlock());
+    }
+
+    @Mod.EventHandler
+    public void onServerStarted(FMLServerStartedEvent event) {
+        RemoteLoginAPI.initAndStartServer();
+    }
+
+    @Mod.EventHandler
+    public void onServerStopping(FMLServerStoppingEvent event) {
+        RemoteLoginAPI.stopServer();
+    }
+
+}

@@ -1,0 +1,12 @@
+[{
+  "modid": "remote_login",
+  "name": "Remote Login",
+  "version": "${mod_version}",
+  "mcversion": "1.12.2",
+  "description": "A WebUI for AE2UEL",
+  "authorList": ["Taskeren"],
+  "credits": "",
+  "url": "",
+  "updateJSON": "",
+  "logoFile": ""
+}]

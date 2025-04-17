@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "normal": {
+      "model": "remote_login:remote_login"
+    }
+  }
+}
