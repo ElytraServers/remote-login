@@ -52,7 +52,11 @@ public class TypeConverter {
     }
 
     public static AccessPointInfo toAccessPointInfo(RemoteLoginTile tile) {
-        return new AccessPointInfo(tile.getUuid().toString(), toDimAndPos(tile.getLocation()));
+        AccessPointInfo info = new AccessPointInfo(tile.getUuid().toString(), toDimAndPos(tile.getLocation()));
+        if(tile.hasCustomInventoryName()) {
+            info.setName(tile.getCustomInventoryName());
+        }
+        return info;
     }
 
     public static NBTTagCompound encodedString2Nbt(String s) throws IOException {
