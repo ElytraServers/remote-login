@@ -185,10 +185,10 @@ public class RemoteLoginTile extends AENetworkInvTile implements RemoteLoginAcce
     }
 
     @Override
-    public List<ItemRepresentation> getAllItemsInNetwork() throws RemoteLoginException {
+    public List<ItemRepresentation> getAllItemsInNetwork(boolean renderItem) throws RemoteLoginException {
         IItemList<IAEItemStack> itemList = getAEItemListInNetwork();
         return IteratorUtils.collectFromIterator(itemList.iterator()).stream()
-                .map(TypeConverter::itemStack2Ir)
+                .map(aeStack -> TypeConverter.itemStack2Ir(aeStack, renderItem))
                 .collect(Collectors.toList());
     }
 

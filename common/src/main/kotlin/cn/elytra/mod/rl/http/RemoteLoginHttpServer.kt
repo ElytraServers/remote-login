@@ -19,8 +19,12 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.util.*
+import io.ktor.util.converters.*
+import io.ktor.util.reflect.*
 import kotlinx.coroutines.future.asDeferred
 import kotlinx.coroutines.runBlocking
+import kotlin.properties.ReadOnlyProperty
+import kotlin.reflect.KProperty
 
 class RemoteLoginHttpServer {
 
@@ -126,7 +130,8 @@ class RemoteLoginHttpServer {
 
 							get("/items") {
 								val ap = call.getAccessPoint()
-								call.respond(ap.allItemsInNetwork)
+								val renderItem by call.queryParameters.optional<Boolean>()
+								call.respond(ap.getAllItemsInNetwork(renderItem ?: true))
 							}
 
 							post("/simulate-craft") {
@@ -162,6 +167,25 @@ class RemoteLoginHttpServer {
 			}
 		}
 		return ap
+	}
+
+	private inline fun <reified T : Any> Parameters.optional(typeInfo: TypeInfo = typeInfo<T>()): ReadOnlyProperty<Nothing?, T?> {
+		return object : ReadOnlyProperty<Nothing?, T?> {
+			override fun getValue(thisRef: Nothing?, property: KProperty<*>): T? {
+				val name = property.name
+				val values = getAll(name)
+				if(values == null) return null
+				return try {
+					DefaultConversionService.fromValues(values, typeInfo) as T
+				} catch(cause: Exception) {
+					throw ParameterConversionException(
+						name,
+						typeInfo.type.simpleName ?: typeInfo.type.toString(),
+						cause
+					)
+				}
+			}
+		}
 	}
 
 	val server by lazy { createServer() }

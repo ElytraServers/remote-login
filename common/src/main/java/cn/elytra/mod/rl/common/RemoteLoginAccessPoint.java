@@ -58,7 +58,20 @@ public interface RemoteLoginAccessPoint {
      * @return the items.
      * @throws RemoteLoginException if any exception thrown.
      */
-    List<ItemRepresentation> getAllItemsInNetwork() throws RemoteLoginException;
+    default List<ItemRepresentation> getAllItemsInNetwork() throws RemoteLoginException {
+        return getAllItemsInNetwork(false);
+    }
+
+    /**
+     * Collect all the items in the network, including the requestable ones with zero amounts.
+     * <p>
+     * If renderItem is {@code true}, the Item Representations will have their iconBase64String set.
+     *
+     * @param renderItem {@code true} to render item icons.
+     * @return the items.
+     * @throws RemoteLoginException if any exception thrown.
+     */
+    List<ItemRepresentation> getAllItemsInNetwork(boolean renderItem) throws RemoteLoginException;
 
     /**
      * Get the crafting plan for the given item, asynchronized.

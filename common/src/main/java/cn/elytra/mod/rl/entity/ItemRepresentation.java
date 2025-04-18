@@ -31,6 +31,9 @@ public class ItemRepresentation {
     @Nullable
     private Boolean craftable;
 
+    @Nullable
+    private String iconBase64String;
+
     /**
      * A constructor for general items to add NBT tags later.
      */

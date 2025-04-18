@@ -6,6 +6,7 @@ import appeng.api.storage.data.IAEItemStack;
 import appeng.api.util.DimensionalCoord;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.util.item.AEItemStack;
+import cn.elytra.mod.rl.RemoteLoginAPI;
 import cn.elytra.mod.rl.common.RemoteLoginCraftingHandle;
 import cn.elytra.mod.rl.entity.AccessPointInfo;
 import cn.elytra.mod.rl.entity.CraftingCpuInfo;
@@ -44,7 +45,7 @@ public class TypeConverter {
     }
 
     public static CraftingCpuInfo toCraftingCpuInfo(ICraftingCPU cpu) {
-        CraftingCpuInfo info = new CraftingCpuInfo(cpu.isBusy(), cpu.getAvailableStorage(), cpu.getCoProcessors(), cpu.getName(), itemStack2Ir(cpu.getFinalOutput()), cpu.getRemainingItemCount(), cpu.getStartItemCount());
+        CraftingCpuInfo info = new CraftingCpuInfo(cpu.isBusy(), cpu.getAvailableStorage(), cpu.getCoProcessors(), cpu.getName(), itemStack2Ir(cpu.getFinalOutput(), false), cpu.getRemainingItemCount(), cpu.getStartItemCount());
         if(cpu instanceof CraftingCPUCluster) {
             info.remainingOperations = ReflectionUtils.<Integer>getFieldValueSafe(cpu, "remainingOperations", null);
         }
@@ -98,8 +99,8 @@ public class TypeConverter {
         return itemStack != null ? AEItemStack.fromItemStack(itemStack) : null;
     }
 
-    @Contract("null -> null")
-    public static ItemRepresentation itemStack2Ir(ItemStack stack) {
+    @Contract("null, _ -> null")
+    public static ItemRepresentation itemStack2Ir(ItemStack stack, boolean renderItem) {
         if(stack == null) return null;
 
         ItemRepresentation ir = new ItemRepresentation(getItemId(stack), stack.getCount(), stack.getMetadata());
@@ -112,11 +113,18 @@ public class TypeConverter {
                 }
             }
         }
+        if(renderItem) {
+            ir.setIconBase64String(RemoteLoginAPI.getIconProvider().getItemIconBase64(ir));
+        }
         return ir;
     }
 
-    @Contract("null -> null")
-    public static ItemRepresentation itemStack2Ir(IAEItemStack aeStack) {
+    public static ItemRepresentation itemStack2Ir(ItemStack stack) {
+        return itemStack2Ir(stack, false);
+    }
+
+    @Contract("null, _ -> null")
+    public static ItemRepresentation itemStack2Ir(IAEItemStack aeStack, boolean renderItem) {
         if(aeStack == null) return null;
 
         ItemStack def = aeStack.getDefinition();
@@ -130,11 +138,18 @@ public class TypeConverter {
                 }
             }
         }
+        if(renderItem) {
+            ir.setIconBase64String(RemoteLoginAPI.getIconProvider().getItemIconBase64(ir));
+        }
 
         // AEItemStack additions
         ir.setCraftable(aeStack.isCraftable());
 
         return ir;
+    }
+
+    public static ItemRepresentation itemStack2Ir(IAEItemStack aeStack) {
+        return itemStack2Ir(aeStack, false);
     }
 
     private static class CraftingLinkWrapper implements RemoteLoginCraftingHandle {
