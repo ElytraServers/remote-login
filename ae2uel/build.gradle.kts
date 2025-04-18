@@ -71,6 +71,8 @@ dependencies {
 	implementation("appeng:ae2-uel:v0.56.7:dev") { isTransitive = false }
 	implementation("mezz:jei:4.27.3") { isTransitive = false }
 
+	implementation(rfg.deobf(files("libs/ItemRenderDark-0.3.1.jar")))
+
 }
 
 tasks.processResources {

@@ -1,7 +1,10 @@
 package cn.elytra.mod.rl;
 
 import cn.elytra.mod.rl.common.RemoteLoginConfig;
+import cn.elytra.mod.rl.common.RemoteLoginException;
+import cn.elytra.mod.rl.common.RemoteLoginIconProvider;
 import cn.elytra.mod.rl.common.RemoteLoginManager;
+import cn.elytra.mod.rl.common.dummy.DummyRemoteLoginIconProvider;
 import cn.elytra.mod.rl.http.RemoteLoginHttpServer;
 import lombok.experimental.UtilityClass;
 import org.apache.logging.log4j.LogManager;
@@ -21,6 +24,9 @@ public class RemoteLoginAPI {
 
     @Nullable
     private static RemoteLoginManager manager = null;
+
+    @NotNull
+    private static RemoteLoginIconProvider iconProvider = new DummyRemoteLoginIconProvider();
 
     @NotNull
     private static RemoteLoginConfig config = new RemoteLoginConfig() {
@@ -67,5 +73,18 @@ public class RemoteLoginAPI {
 
     public static void setConfig(@NotNull RemoteLoginConfig config) {
         RemoteLoginAPI.config = config;
+    }
+
+    public static boolean hasValidIconProvider() {
+        return !(iconProvider instanceof DummyRemoteLoginIconProvider);
+    }
+
+    @NotNull
+    public static RemoteLoginIconProvider getIconProvider() {
+        return iconProvider;
+    }
+
+    public static void setIconProvider(@NotNull RemoteLoginIconProvider iconProvider) {
+        RemoteLoginAPI.iconProvider = iconProvider;
     }
 }

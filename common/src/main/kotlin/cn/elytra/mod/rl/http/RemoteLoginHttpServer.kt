@@ -18,6 +18,7 @@ import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.server.util.*
 import kotlinx.coroutines.future.asDeferred
 import kotlinx.coroutines.runBlocking
 
@@ -102,6 +103,17 @@ class RemoteLoginHttpServer {
 
 					get("/list") {
 						call.respond(RemoteLoginAPI.getManager().remoteLoginInfoList)
+					}
+
+					get("/icon/{itemId}/{itemMetadata}") {
+						val iconProvider = RemoteLoginAPI.getIconProvider()
+						val itemId: String by call.pathParameters
+						val itemMetadata: Int? by call.pathParameters
+
+						val base64 = iconProvider.getItemIconBase64(itemId, itemMetadata ?: 0)
+						val bytes = java.util.Base64.getDecoder().decode(base64)
+
+						call.respondBytes(bytes, contentType = ContentType.Image.PNG)
 					}
 
 					// network-related operations

@@ -7,5 +7,6 @@ data class RLResponseException(val message: String, val code: Int = C_UNKNOWN) {
 		const val C_GRID_ACCESS_EXCEPTION: Int = 1
 		const val C_PRESERVED_2: Int = 2
 		const val C_INVALID_SECRET: Int = 3
+		const val C_ICON_PROVIDER_MISSING: Int = 4
 	}
 }
