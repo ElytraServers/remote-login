@@ -23,9 +23,15 @@ dependencies {
 	implementation("io.ktor:ktor-server-cio")
 	implementation("io.ktor:ktor-server-content-negotiation")
 	implementation("io.ktor:ktor-serialization-gson")
+	implementation("io.ktor:ktor-server-auth")
+	implementation("io.ktor:ktor-server-status-pages")
 
 	implementation("org.jetbrains:annotations:24.0.0")
 	implementation("io.ktor:ktor-serialization-jackson:3.1.2")
+	implementation("io.ktor:ktor-server-auth-jvm:3.1.2")
+	implementation("io.ktor:ktor-server-core-jvm:3.1.2")
+	implementation("io.ktor:ktor-server-host-common-jvm:3.1.2")
+	implementation("io.ktor:ktor-server-status-pages-jvm:3.1.2")
 	compileOnly("org.apache.logging.log4j:log4j-api:2.24.3")
 
 	compileOnly("org.projectlombok:lombok:1.18.38")
