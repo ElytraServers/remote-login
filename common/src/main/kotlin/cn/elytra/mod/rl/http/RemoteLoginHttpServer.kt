@@ -13,6 +13,7 @@ import io.ktor.server.cio.*
 import io.ktor.server.engine.*
 import io.ktor.server.plugins.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -70,6 +71,24 @@ class RemoteLoginHttpServer {
 							null
 						}
 					}
+				}
+			}
+
+			install(CORS) {
+				allowMethod(HttpMethod.Options)
+				allowMethod(HttpMethod.Put)
+				allowMethod(HttpMethod.Delete)
+				allowMethod(HttpMethod.Patch)
+				allowHeader(HttpHeaders.Authorization)
+				// allowHeader("MyCustomHeader")
+
+				val corsAllowedOrigins = config.corsAllowedOrigins
+				if(corsAllowedOrigins != null) {
+					corsAllowedOrigins.forEach {
+						allowHost(it)
+					}
+				} else {
+					anyHost()
 				}
 			}
 
