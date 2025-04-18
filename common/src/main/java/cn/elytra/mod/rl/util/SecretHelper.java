@@ -7,11 +7,11 @@ public class SecretHelper {
     private static final Random RAND = new Random();
 
     public static String generate() {
-        String[] numbers = new String[4];
+        StringBuilder result = new StringBuilder();
         for(int i = 0; i < 4; i++) {
-            numbers[i] = String.valueOf(RAND.nextInt(10));
+            result.append(RAND.nextInt(10));
         }
-        return String.join("-", numbers);
+        return result.toString();
     }
 
 }
