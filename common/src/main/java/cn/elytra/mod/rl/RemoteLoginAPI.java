@@ -1,7 +1,6 @@
 package cn.elytra.mod.rl;
 
 import cn.elytra.mod.rl.common.RemoteLoginConfig;
-import cn.elytra.mod.rl.common.RemoteLoginException;
 import cn.elytra.mod.rl.common.RemoteLoginIconProvider;
 import cn.elytra.mod.rl.common.RemoteLoginManager;
 import cn.elytra.mod.rl.common.dummy.DummyRemoteLoginIconProvider;

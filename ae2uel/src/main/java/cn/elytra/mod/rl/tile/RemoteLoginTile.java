@@ -1,14 +1,11 @@
 package cn.elytra.mod.rl.tile;
 
 import appeng.api.AEApi;
-import appeng.api.config.Actionable;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.crafting.ICraftingCPU;
 import appeng.api.networking.crafting.ICraftingGrid;
 import appeng.api.networking.crafting.ICraftingJob;
-import appeng.api.networking.crafting.ICraftingLink;
 import appeng.api.networking.security.IActionSource;
-import appeng.api.networking.storage.IStorageGrid;
 import appeng.api.storage.IMEMonitor;
 import appeng.api.storage.channels.IItemStorageChannel;
 import appeng.api.storage.data.IAEItemStack;
@@ -16,40 +13,39 @@ import appeng.api.storage.data.IItemList;
 import appeng.api.util.AECableType;
 import appeng.api.util.AEPartLocation;
 import appeng.api.util.DimensionalCoord;
-import appeng.crafting.CraftingJob;
 import appeng.me.GridAccessException;
 import appeng.me.helpers.MachineSource;
 import appeng.tile.grid.AENetworkInvTile;
 import appeng.util.inv.InvOperation;
-import appeng.util.item.AEItemStack;
+import cn.elytra.mod.rl.RemoteLoginCraftingPlanImpl;
 import cn.elytra.mod.rl.RemoteLoginExceptionImpl;
 import cn.elytra.mod.rl.RemoteLoginTileManager;
 import cn.elytra.mod.rl.common.RemoteLoginAccessPoint;
-import cn.elytra.mod.rl.common.RemoteLoginCraftingHandle;
+import cn.elytra.mod.rl.common.RemoteLoginCraftingPlan;
 import cn.elytra.mod.rl.common.RemoteLoginException;
 import cn.elytra.mod.rl.entity.AccessPointInfo;
 import cn.elytra.mod.rl.entity.CraftingCpuInfo;
-import cn.elytra.mod.rl.entity.CraftingPlan;
 import cn.elytra.mod.rl.entity.ItemRepresentation;
 import cn.elytra.mod.rl.util.IteratorUtils;
 import cn.elytra.mod.rl.util.SecretHelper;
 import cn.elytra.mod.rl.util.TypeConverter;
+import cn.elytra.mod.rl.util.Utils;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableSet;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.wrapper.EmptyHandler;
-import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class RemoteLoginTile extends AENetworkInvTile implements RemoteLoginAccessPoint {
@@ -58,7 +54,9 @@ public class RemoteLoginTile extends AENetworkInvTile implements RemoteLoginAcce
     protected String secret;
 
     // transient
-    protected ICraftingJob lastCraftingJob;
+    @NotNull
+    protected final Cache<String, RemoteLoginCraftingPlan> craftingPlanCache = CacheBuilder.newBuilder()
+            .expireAfterWrite(5, TimeUnit.MINUTES).maximumSize(128).build();
 
     public RemoteLoginTile() {
         reset();
@@ -86,14 +84,6 @@ public class RemoteLoginTile extends AENetworkInvTile implements RemoteLoginAcce
 
     public void setSecret(String secret) {
         this.secret = secret;
-    }
-
-    public ICraftingJob getLastCraftingJob() {
-        return lastCraftingJob;
-    }
-
-    public void setLastCraftingJob(ICraftingJob lastCraftingJob) {
-        this.lastCraftingJob = lastCraftingJob;
     }
 
     @Override
@@ -127,7 +117,7 @@ public class RemoteLoginTile extends AENetworkInvTile implements RemoteLoginAcce
         return super.writeToNBT(data);
     }
 
-    protected IActionSource newThisActionSource() {
+    public IActionSource newThisActionSource() {
         return new MachineSource(this);
     }
 
@@ -192,12 +182,6 @@ public class RemoteLoginTile extends AENetworkInvTile implements RemoteLoginAcce
                 .collect(Collectors.toList());
     }
 
-    @Nullable
-    protected CraftingJob makeCraftingJob(ItemRepresentation ir) throws GridAccessException {
-        AEItemStack aeItemStack = TypeConverter.ir2AeItemStack(ir);
-        return aeItemStack != null ? new CraftingJob(world, getProxy().getGrid(), new MachineSource(this), aeItemStack, null) : null;
-    }
-
     public Future<ICraftingJob> makeCraftingJob(IAEItemStack itemToCraft) {
         try {
             IGrid grid = getProxy().getGrid();
@@ -209,97 +193,22 @@ public class RemoteLoginTile extends AENetworkInvTile implements RemoteLoginAcce
         }
     }
 
-    /**
-     * Calculate the Crafting Plan from the given Crafting Job.
-     *
-     * @param futureJob the crafting job to wait and calculate
-     * @return the calculated crafting plan data.
-     */
-    @Blocking
-    protected CraftingPlan calculateToCraftingPlan(Future<ICraftingJob> futureJob) {
-        try {
-            ICraftingJob result = futureJob.get();
-
-            // update last crafting job for later use
-            this.setLastCraftingJob(result);
-
-            // storage, pending, missing
-            List<IAEItemStack> a = new ArrayList<>(), b = new ArrayList<>(), c = new ArrayList<>();
-
-            IItemList<IAEItemStack> plan = AEApi.instance().storage().getStorageChannel(IItemStorageChannel.class).createList();
-            result.populatePlan(plan);
-
-            long byteTotal = result.getByteTotal();
-
-            for(IAEItemStack out : plan) {
-                IAEItemStack o = out.copy();
-                o.reset();
-                o.setStackSize(out.getStackSize());
-
-                IAEItemStack p = out.copy();
-                p.reset();
-                p.setStackSize(out.getCountRequestable());
-
-                IStorageGrid sg = getProxy().getStorage();
-                IMEMonitor<IAEItemStack> items = sg.getInventory(AEApi.instance().storage().getStorageChannel(IItemStorageChannel.class));
-
-                IAEItemStack m;
-
-                m = o.copy();
-                o = items.extractItems(o, Actionable.SIMULATE, newThisActionSource());
-
-                if(o == null) {
-                    o = m.copy();
-                    o.setStackSize(0);
-                }
-
-                m.setStackSize(m.getStackSize() - o.getStackSize());
-
-                if(o.getStackSize() > 0) {
-                    a.add(o);
-                }
-
-                if(p.getStackSize() > 0) {
-                    b.add(p);
-                }
-
-                if(m.getStackSize() > 0) {
-                    c.add(m);
-                }
-            }
-
-            return new CraftingPlan(byteTotal,
-                    a.stream().map(TypeConverter::itemStack2Ir).collect(Collectors.toList()),
-                    b.stream().map(TypeConverter::itemStack2Ir).collect(Collectors.toList()),
-                    c.stream().map(TypeConverter::itemStack2Ir).collect(Collectors.toList()));
-        } catch(GridAccessException e) {
-            throw RemoteLoginExceptionImpl.wrap(e);
-        } catch(InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     @Override
-    public CompletableFuture<CraftingPlan> simulateCraftingPlan(ItemRepresentation ir) {
+    public CompletableFuture<RemoteLoginCraftingPlan> getCraftingPlan(ItemRepresentation ir) {
         Future<ICraftingJob> futureJob = makeCraftingJob(TypeConverter.ir2AeItemStack(ir));
-        return CompletableFuture.supplyAsync(() -> calculateToCraftingPlan(futureJob));
-    }
-
-    protected ICraftingLink submitCraftingPlan(ICraftingJob result, @Nullable ICraftingCPU selectedCpu) {
-        if(result.isSimulation()) return null;
-
-        try {
-            return getProxy().getCrafting().submitJob(result, null, selectedCpu, true, newThisActionSource());
-        } catch(GridAccessException e) {
-            throw RemoteLoginExceptionImpl.wrap(e);
-        }
+        return Utils.waitFutureAndThen(futureJob, (result) -> new RemoteLoginCraftingPlanImpl(this, result));
     }
 
     @Override
-    public RemoteLoginCraftingHandle submitLastCraftingPlan() {
-        if(getLastCraftingJob() == null) return null;
-        ICraftingLink link = submitCraftingPlan(getLastCraftingJob(), null);
-        if(link != null) setLastCraftingJob(null); // remove if it is deployed successfully
-        return TypeConverter.wrapToCraftingHandle(link);
+    public String putCraftingPlanCache(RemoteLoginCraftingPlan plan) {
+        String key = UUID.randomUUID().toString();
+        craftingPlanCache.put(key, plan);
+        return key;
+    }
+
+    @Nullable
+    @Override
+    public RemoteLoginCraftingPlan getCraftingPlanCache(String key) {
+        return craftingPlanCache.getIfPresent(key);
     }
 }

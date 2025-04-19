@@ -36,6 +36,9 @@ dependencies {
 	implementation("io.ktor:ktor-server-cors-jvm:3.1.2")
 	compileOnly("org.apache.logging.log4j:log4j-api:2.24.3")
 
+	// provided in Minecraft
+	compileOnly("com.google.guava:guava:33.4.8-jre")
+
 	compileOnly("org.projectlombok:lombok:1.18.38")
 	annotationProcessor("org.projectlombok:lombok:1.18.38")
 }

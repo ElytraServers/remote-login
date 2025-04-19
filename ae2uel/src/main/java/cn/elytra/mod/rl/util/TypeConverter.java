@@ -24,6 +24,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.util.Base64;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A utility class to convert objects.
@@ -150,6 +152,10 @@ public class TypeConverter {
 
     public static ItemRepresentation itemStack2Ir(IAEItemStack aeStack) {
         return itemStack2Ir(aeStack, false);
+    }
+
+    public static List<ItemRepresentation> itemStack2IrList(List<IAEItemStack> aeStacks) {
+        return aeStacks.stream().map(TypeConverter::itemStack2Ir).collect(Collectors.toList());
     }
 
     private static class CraftingLinkWrapper implements RemoteLoginCraftingHandle {

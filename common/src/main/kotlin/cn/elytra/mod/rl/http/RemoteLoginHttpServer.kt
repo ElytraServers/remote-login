@@ -4,6 +4,7 @@ import cn.elytra.mod.rl.RemoteLoginAPI
 import cn.elytra.mod.rl.common.RemoteLoginAccessPoint
 import cn.elytra.mod.rl.common.RemoteLoginException
 import cn.elytra.mod.rl.entity.ItemRepresentation
+import cn.elytra.mod.rl.http.entity.CraftResponse
 import cn.elytra.mod.rl.http.entity.RLResponseException
 import io.ktor.http.*
 import io.ktor.serialization.gson.*
@@ -21,7 +22,7 @@ import io.ktor.server.routing.*
 import io.ktor.server.util.*
 import io.ktor.util.converters.*
 import io.ktor.util.reflect.*
-import kotlinx.coroutines.future.asDeferred
+import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
@@ -87,6 +88,9 @@ class RemoteLoginHttpServer {
 				allowHeader(HttpHeaders.Authorization)
 				// allowHeader("MyCustomHeader")
 
+				allowCredentials = true
+				allowNonSimpleContentTypes = true
+
 				val corsAllowedOrigins = config.corsAllowedOrigins
 				if(corsAllowedOrigins != null) {
 					corsAllowedOrigins.forEach {
@@ -134,17 +138,25 @@ class RemoteLoginHttpServer {
 								call.respond(ap.getAllItemsInNetwork(renderItem ?: true))
 							}
 
-							post("/simulate-craft") {
+							post("/craft/simulate") {
 								val ap = call.getAccessPoint()
 								val ir = call.receive<ItemRepresentation>()
-								val deferred = ap.simulateCraftingPlan(ir).asDeferred()
-								call.respond(deferred.await())
+								val plan = ap.getCraftingPlan(ir).await()
+								val key = ap.putCraftingPlanCache(plan)
+								val info = plan.craftingPlanInfo
+								call.respond(CraftResponse(key, info))
 							}
 
-							post("/deploy-craft") {
+							post("/craft/deploy") {
 								val ap = call.getAccessPoint()
-								ap.submitLastCraftingPlan()
-								call.respond(status = HttpStatusCode.Accepted, message = "OK")
+								val key = call.receive<String>()
+								val plan = ap.getCraftingPlanCache(key)
+									?: throw NotFoundException()
+								plan.start()
+								call.respond(
+									HttpStatusCode.Accepted,
+									"OK"
+								)
 							}
 						}
 					}

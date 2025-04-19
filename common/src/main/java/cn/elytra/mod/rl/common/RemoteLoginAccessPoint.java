@@ -2,8 +2,8 @@ package cn.elytra.mod.rl.common;
 
 import cn.elytra.mod.rl.entity.AccessPointInfo;
 import cn.elytra.mod.rl.entity.CraftingCpuInfo;
-import cn.elytra.mod.rl.entity.CraftingPlan;
 import cn.elytra.mod.rl.entity.ItemRepresentation;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.List;
@@ -77,14 +77,25 @@ public interface RemoteLoginAccessPoint {
      * Get the crafting plan for the given item, asynchronized.
      *
      * @param ir the given item
-     * @return the CompletableFuture of the crafting plan.
+     * @return the crafting plan.
      */
-    CompletableFuture<CraftingPlan> simulateCraftingPlan(ItemRepresentation ir);
+    CompletableFuture<RemoteLoginCraftingPlan> getCraftingPlan(ItemRepresentation ir);
 
     /**
-     * Submit the crafting job of the last simulated one.
+     * Cache the crafting plan for future usage.
      *
-     * @return the crafting job handler, or {@code null} if either the last job is absent or invalid.
+     * @param plan the plan
+     * @return the key to retrieve the plan.
      */
-    RemoteLoginCraftingHandle submitLastCraftingPlan();
+    String putCraftingPlanCache(RemoteLoginCraftingPlan plan);
+
+    /**
+     * Find the cached crafting plan.
+     *
+     * @param key the key
+     * @return the cached crafting plan, or {@code null} if it doesn't exist or has expired.
+     */
+    @Nullable
+    RemoteLoginCraftingPlan getCraftingPlanCache(String key);
+
 }
