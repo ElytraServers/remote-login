@@ -7,6 +7,7 @@ import java.util.List;
 @Data
 public class CraftingPlanInfo {
 
+    private final boolean simulate;
     private final long byteUsedTotal;
 
     private final List<ItemRepresentation> storage;

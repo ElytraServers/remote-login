@@ -27,6 +27,7 @@ public class RemoteLoginCraftingPlanImpl implements RemoteLoginCraftingPlan {
     protected final List<IAEItemStack> pending = new ArrayList<>();
     protected final List<IAEItemStack> missing = new ArrayList<>();
 
+    protected final boolean simulate;
     protected final long byteUsedTotal;
 
     public RemoteLoginCraftingPlanImpl(RemoteLoginTile tile, ICraftingJob result) {
@@ -34,10 +35,11 @@ public class RemoteLoginCraftingPlanImpl implements RemoteLoginCraftingPlan {
         this.result = result;
 
         try {
+            this.simulate = result.isSimulation();
+            this.byteUsedTotal = result.getByteTotal();
+
             IItemList<IAEItemStack> plan = AEApi.instance().storage().getStorageChannel(IItemStorageChannel.class).createList();
             result.populatePlan(plan);
-
-            byteUsedTotal = result.getByteTotal();
 
             for(IAEItemStack out : plan) {
                 IAEItemStack o = out.copy();
@@ -97,9 +99,11 @@ public class RemoteLoginCraftingPlanImpl implements RemoteLoginCraftingPlan {
 
     @Override
     public CraftingPlanInfo getCraftingPlanInfo() {
-        return new CraftingPlanInfo(byteUsedTotal,
-                TypeConverter.itemStack2IrList(storage),
-                TypeConverter.itemStack2IrList(pending),
-                TypeConverter.itemStack2IrList(missing));
+        return new CraftingPlanInfo(
+                simulate,
+                byteUsedTotal,
+                TypeConverter.itemStack2IrList(storage, true),
+                TypeConverter.itemStack2IrList(pending, true),
+                TypeConverter.itemStack2IrList(missing, true));
     }
 }

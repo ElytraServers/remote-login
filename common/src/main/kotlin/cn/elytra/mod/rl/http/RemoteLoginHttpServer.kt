@@ -65,6 +65,14 @@ class RemoteLoginHttpServer {
 						RLResponseException("Secret is invalid.", RLResponseException.C_INVALID_SECRET)
 					)
 				}
+
+				exception<Exception> { call, cause ->
+					RemoteLoginAPI.LOGGER.warn("Unknown server error has been captured.", cause)
+					call.respond(
+						HttpStatusCode.InternalServerError,
+						RLResponseException("Unknown server error!")
+					)
+				}
 			}
 
 			authentication {

@@ -98,7 +98,16 @@ public class TypeConverter {
 
     public static AEItemStack ir2AeItemStack(ItemRepresentation ir) {
         ItemStack itemStack = ir2ItemStack(ir);
-        return itemStack != null ? AEItemStack.fromItemStack(itemStack) : null;
+        if(itemStack == null) return null;
+
+        // AEItemStack#fromItemStack() will return null if the stack is empty (sized 0 or air),
+        // so we need to cache the amount and force it to 1, and reassign the count.
+        int count = itemStack.getCount();
+        itemStack.setCount(1);
+        AEItemStack aeItemStack = AEItemStack.fromItemStack(itemStack);
+        if(aeItemStack == null) return null;
+        aeItemStack.setStackSize(count);
+        return aeItemStack;
     }
 
     @Contract("null, _ -> null")
@@ -156,6 +165,10 @@ public class TypeConverter {
 
     public static List<ItemRepresentation> itemStack2IrList(List<IAEItemStack> aeStacks) {
         return aeStacks.stream().map(TypeConverter::itemStack2Ir).collect(Collectors.toList());
+    }
+
+    public static List<ItemRepresentation> itemStack2IrList(List<IAEItemStack> aeStacks, boolean renderItem) {
+        return aeStacks.stream().map(i -> itemStack2Ir(i, renderItem)).collect(Collectors.toList());
     }
 
     private static class CraftingLinkWrapper implements RemoteLoginCraftingHandle {
