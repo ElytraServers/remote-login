@@ -34,6 +34,8 @@ dependencies {
 	implementation("io.ktor:ktor-server-host-common-jvm:3.1.2")
 	implementation("io.ktor:ktor-server-status-pages-jvm:3.1.2")
 	implementation("io.ktor:ktor-server-cors-jvm:3.1.2")
+	implementation("io.ktor:ktor-server-caching-headers:3.1.2")
+	implementation("io.ktor:ktor-server-websockets:3.1.2")
 	compileOnly("org.apache.logging.log4j:log4j-api:2.24.3")
 
 	// provided in Minecraft

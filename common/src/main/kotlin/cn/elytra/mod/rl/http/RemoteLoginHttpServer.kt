@@ -2,20 +2,18 @@ package cn.elytra.mod.rl.http
 
 import cn.elytra.mod.rl.RemoteLoginAPI
 import cn.elytra.mod.rl.common.RemoteLoginAccessPoint
-import cn.elytra.mod.rl.common.RemoteLoginException
 import cn.elytra.mod.rl.entity.ItemRepresentation
 import cn.elytra.mod.rl.http.entity.CraftResponse
-import cn.elytra.mod.rl.http.entity.RLResponseException
+import cn.elytra.mod.rl.http.plugin.configureAuthentication
+import cn.elytra.mod.rl.http.plugin.configureHttp
+import cn.elytra.mod.rl.http.plugin.configureStatusPage
+import cn.elytra.mod.rl.http.plugin.configureWebSocket
 import io.ktor.http.*
-import io.ktor.serialization.gson.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.cio.*
 import io.ktor.server.engine.*
 import io.ktor.server.plugins.*
-import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.plugins.cors.routing.*
-import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -32,82 +30,11 @@ class RemoteLoginHttpServer {
 	private fun createServer(): EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration> {
 		val config = RemoteLoginAPI.getConfig()
 		return embeddedServer(CIO, port = config.httpServerPort, host = config.httpServerHost) {
-			install(ContentNegotiation) {
-				gson {
-					if(config.usePrettyPrintJsonResponse()) {
-						setPrettyPrinting()
-					}
-				}
-			}
 
-			install(StatusPages) {
-				exception<RemoteLoginException> { call, cause ->
-					if(cause.isGridAccessException) {
-						call.respond(
-							HttpStatusCode.InternalServerError,
-							RLResponseException(
-								"Grid Access Exception occurred while executing the operation. Try again!",
-								RLResponseException.C_GRID_ACCESS_EXCEPTION
-							),
-						)
-					} else {
-						RemoteLoginAPI.LOGGER.warn("Exception occurred while executing Remote Login executions.", cause)
-						call.respond(
-							HttpStatusCode.InternalServerError,
-							RLResponseException("Internal Server Error!"),
-						)
-					}
-				}
-
-				exception<InvalidSecretException> { call, cause ->
-					call.respond(
-						HttpStatusCode.Unauthorized,
-						RLResponseException("Secret is invalid.", RLResponseException.C_INVALID_SECRET)
-					)
-				}
-
-				exception<Exception> { call, cause ->
-					RemoteLoginAPI.LOGGER.warn("Unknown server error has been captured.", cause)
-					call.respond(
-						HttpStatusCode.InternalServerError,
-						RLResponseException("Unknown server error!")
-					)
-				}
-			}
-
-			authentication {
-				basic(name = "ap") {
-					realm = "Access Point Authentication"
-					validate { credentials ->
-						if(credentials.name == "remote-login") {
-							RemoteLoginPrincipal(credentials.password)
-						} else {
-							null
-						}
-					}
-				}
-			}
-
-			install(CORS) {
-				allowMethod(HttpMethod.Options)
-				allowMethod(HttpMethod.Put)
-				allowMethod(HttpMethod.Delete)
-				allowMethod(HttpMethod.Patch)
-				allowHeader(HttpHeaders.Authorization)
-				// allowHeader("MyCustomHeader")
-
-				allowCredentials = true
-				allowNonSimpleContentTypes = true
-
-				val corsAllowedOrigins = config.corsAllowedOrigins
-				if(corsAllowedOrigins != null) {
-					corsAllowedOrigins.forEach {
-						allowHost(it)
-					}
-				} else {
-					anyHost()
-				}
-			}
+			configureHttp(config)
+			configureAuthentication()
+			configureStatusPage()
+			configureWebSocket()
 
 			routing {
 				get("/") {
